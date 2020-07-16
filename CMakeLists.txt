@@ -352,7 +352,7 @@ if(LIBXSLT_WITH_GCRYPT)
     target_link_libraries(${EXSLT_LIB_NAME} PRIVATE gcrypt)
 endif()
 
-target_link_libraries(${EXSLT_LIB_NAME} PUBLIC LibXslt ${LIBXML2_LIBRARIES})
+target_link_libraries(${EXSLT_LIB_NAME} PUBLIC ${XSLT_LIB_NAME} ${LIBXML2_LIBRARIES})
 
 if(UNIX)
     target_link_libraries(${EXSLT_LIB_NAME} PRIVATE m)
