@@ -126,7 +126,7 @@ endif()
 
 option(LIBXSLT_WITH_MEM_DEBUG "Add the memory debugging module" OFF)
 option(LIBXSLT_WITH_MODULES "Add the module support" ON)
-option(LIBXSLT_WITH_PROFILER "Add the profiling support" OFF)
+option(LIBXSLT_WITH_PROFILER "Add the profiling support" ON)
 
 set(LIBXSLT_WITH_TRIO OFF)
 option(LIBXSLT_WITH_XSLT_DEBUG "Add the debugging code" OFF)
