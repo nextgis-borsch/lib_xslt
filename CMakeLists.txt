@@ -279,7 +279,6 @@ target_include_directories(
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 if(LIBXSLT_WITH_CRYPTO)
@@ -372,7 +371,6 @@ target_include_directories(
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 if(LIBXSLT_WITH_GCRYPT)
@@ -404,15 +402,6 @@ if(WIN32)
             ${EXSLT_LIB_NAME}
             PROPERTIES
             DEBUG_POSTFIX d
-        )
-    else()
-        set_target_properties(
-            ${EXSLT_LIB_NAME}
-            PROPERTIES
-            DEBUG_POSTFIX sd
-            MINSIZEREL_POSTFIX s
-            RELEASE_POSTFIX s
-            RELWITHDEBINFO_POSTFIX s
         )
     endif()
 endif()
