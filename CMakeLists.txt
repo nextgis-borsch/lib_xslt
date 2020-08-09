@@ -302,9 +302,7 @@ endif()
 set_target_properties(
     ${XSLT_LIB_NAME}
     PROPERTIES
-    IMPORT_PREFIX lib
     POSITION_INDEPENDENT_CODE ON
-    PREFIX lib
     VERSION ${VERSION}
 )
 
@@ -314,15 +312,6 @@ if(WIN32)
             ${XSLT_LIB_NAME}
             PROPERTIES
             DEBUG_POSTFIX d
-        )
-    else()
-        set_target_properties(
-            ${XSLT_LIB_NAME}
-            PROPERTIES
-            DEBUG_POSTFIX sd
-            MINSIZEREL_POSTFIX s
-            RELEASE_POSTFIX s
-            RELWITHDEBINFO_POSTFIX s
         )
     endif()
 endif()
@@ -391,9 +380,7 @@ endif()
 set_target_properties(
     ${EXSLT_LIB_NAME}
     PROPERTIES
-    IMPORT_PREFIX lib
     POSITION_INDEPENDENT_CODE ON
-    PREFIX lib
     VERSION ${LIBEXSLT_VERSION}
 )
 
