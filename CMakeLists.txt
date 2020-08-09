@@ -22,7 +22,7 @@
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
-project(libxslt)
+project(xslt)
 
 # Some init settings
 set(CMAKE_COLOR_MAKEFILE ON)
@@ -45,34 +45,45 @@ endif()
 if(OSX_FRAMEWORK)
     set(INSTALL_BIN_DIR "bin" CACHE INTERNAL "Installation directory for executables" FORCE)
     set(INSTALL_LIB_DIR "Library/Frameworks" CACHE INTERNAL "Installation directory for libraries" FORCE)
-    set(INSTALL_INC_DIR ${INSTALL_LIB_DIR}/${PROJECT_NAME}.framework/Headers CACHE INTERNAL "Installation directory for headers" FORCE)
-    set(INSTALL_ENGINES_DIR ${INSTALL_LIB_DIR}/${PROJECT_NAME}.framework/Resources/engines CACHE INTERNAL "Directory for engines" FORCE)
-    set(INSTALL_SHARE_DIR ${INSTALL_LIB_DIR}/${PROJECT_NAME}.framework/Resources/ssl CACHE INTERNAL "Directory for data" FORCE)
-    set(INSTALL_PARENT_INC_DIR ${INSTALL_INC_DIR} CACHE INTERNAL "Installation directory for headers" FORCE)
-    set(INSTALL_CMAKECONF_DIR ${INSTALL_LIB_DIR}/${PROJECT_NAME}.framework/Resources/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
+    set(INSTALL_INC_DIR ${INSTALL_LIB_DIR}/lib${PROJECT_NAME}.framework/Headers CACHE INTERNAL "Installation directory for headers" FORCE)
+    set(INSTALL_SHARE_DIR ${INSTALL_LIB_DIR}/lib${PROJECT_NAME}.framework/Resources CACHE INTERNAL "Directory for data" FORCE)
+    set(INSTALL_CMAKECONF_DIR ${INSTALL_LIB_DIR}/lib${PROJECT_NAME}.framework/Resources/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
     set(SKIP_INSTALL_HEADERS ON)
     set(SKIP_INSTALL_EXECUTABLES OFF)
     set(SKIP_INSTALL_FILES ON)
     set(SKIP_INSTALL_EXPORT ON)
     set(CMAKE_MACOSX_RPATH ON)
+    set(BUILD_SHARED_LIBS ON)
 else()
     include(GNUInstallDirs)
 
     set(INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "Installation directory for executables" FORCE)
     set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "Installation directory for libraries" FORCE)
     set(INSTALL_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE INTERNAL "Installation directory for headers" FORCE)
-    set(INSTALL_SHARE_DIR ${CMAKE_INSTALL_DATADIR}/ssl CACHE INTERNAL "Installation directory for share data" FORCE)
+    set(INSTALL_SHARE_DIR ${CMAKE_INSTALL_DATADIR} CACHE INTERNAL "Installation directory for share data" FORCE)
     set(INSTALL_PARENT_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE INTERNAL "Installation directory for headers" FORCE)
-    set(INSTALL_CMAKECONF_DIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
+    set(INSTALL_CMAKECONF_DIR ${CMAKE_INSTALL_DATADIR}/lib${PROJECT_NAME}/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 endif()
 
 set(PACKAGE_NAME ${PROJECT_NAME})
 string(TOUPPER ${PACKAGE_NAME} PACKAGE_UPPER_NAME)
 
-set(XSLT_LIB_NAME ${PROJECT_NAME})
-set(EXSLT_LIB_NAME libexslt)
+
+if(WIN32 OR OSX_FRAMEWORK)
+    set(XSLT_LIB_NAME lib${PROJECT_NAME})
+    set(EXSLT_LIB_NAME libexslt)
+else()
+    set(XSLT_LIB_NAME ${PROJECT_NAME})
+    set(EXSLT_LIB_NAME exslt)
+endif()
+
 string(TOUPPER ${XSLT_LIB_NAME} XSLT_PACKAGE_UPPER_NAME)
 string(TOUPPER ${EXSLT_LIB_NAME} EXSLT_PACKAGE_UPPER_NAME)
+
+if(POLICY CMP0075)
+	cmake_policy(SET CMP0075 NEW)
+endif()
+
 
 include(util)
 # Version information
@@ -89,6 +100,11 @@ set(LIBXSLT_VERSION_EXTRA "")
 set(VERSION ${LIBXSLT_DOTTED_VERSION})
 set(LIBEXSLT_VERSION ${LIBEXSLT_DOTTED_VERSION})
 
+if(OSX_FRAMEWORK)
+    set(LIBXSLT_FRAMEWORK_VERSION ${LIBXSLT_MAJOR_VERSION})
+    set(LIBEXSLT_FRAMEWORK_VERSION ${LIBEXSLT_MAJOR_VERSION})
+endif()
+
 report_version(${PROJECT_NAME} ${VERSION})
 
 #include(CMakePackageConfigHelpers)
@@ -103,7 +119,7 @@ find_package(Threads)
 include(CheckLibraryExists)
 check_library_exists(grypt gcry_control "gcrypt.h" HAVE_GCRYPT)
 
-option(LIBXSLT_WITH_DEBUGGER "Add the debugging support" ON)
+option(LIBXSLT_WITH_DEBUGGER "Add the debugging support" OFF)
 
 if(HAVE_GCRYPT)
     option(LIBXSLT_WITH_CRYPTO "Add crypto support to exslt" ON)
@@ -113,7 +129,7 @@ endif()
 
 option(LIBXSLT_WITH_MEM_DEBUG "Add the memory debugging module" OFF)
 option(LIBXSLT_WITH_MODULES "Add the module support" ON)
-option(LIBXSLT_WITH_PROFILER "Add the profiling support" ON)
+option(LIBXSLT_WITH_PROFILER "Add the profiling support" OFF)
 
 set(LIBXSLT_WITH_TRIO OFF)
 option(LIBXSLT_WITH_XSLT_DEBUG "Add the debugging code" OFF)
@@ -205,7 +221,7 @@ else()
         set(_POSIX_1_SOURCE ON)
         set(_POSIX_SOURCE ON)
     endif()
-    configure_file(config.h.cmake.in config.h)
+    configure_file(cmake/config.cmake.in config.h)
 endif()
 
 configure_file(libexslt/exsltconfig.h.in libexslt/exsltconfig.h)
@@ -291,7 +307,6 @@ set_target_properties(
     ${XSLT_LIB_NAME}
     PROPERTIES
     IMPORT_PREFIX lib
-    OUTPUT_NAME xslt
     POSITION_INDEPENDENT_CODE ON
     PREFIX lib
     VERSION ${VERSION}
@@ -314,6 +329,21 @@ if(WIN32)
             RELWITHDEBINFO_POSTFIX s
         )
     endif()
+endif()
+
+if(OSX_FRAMEWORK)
+    set_property(SOURCE ${LIBXSLT_HDRS}
+        PROPERTY MACOSX_PACKAGE_LOCATION "Headers/libxslt"
+    )
+    set_target_properties(${XSLT_LIB_NAME} PROPERTIES
+        FRAMEWORK TRUE
+        FRAMEWORK_VERSION "${LIBXSLT_FRAMEWORK_VERSION}"
+        VERSION ${VERSION}
+        MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${VERSION}
+        MACOSX_FRAMEWORK_BUNDLE_VERSION ${VERSION}
+        MACOSX_FRAMEWORK_IDENTIFIER org.xmlsoft.libxslt
+        XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
+    )
 endif()
 
 set(
@@ -366,7 +396,6 @@ set_target_properties(
     ${EXSLT_LIB_NAME}
     PROPERTIES
     IMPORT_PREFIX lib
-    OUTPUT_NAME exslt
     POSITION_INDEPENDENT_CODE ON
     PREFIX lib
     VERSION ${LIBEXSLT_VERSION}
@@ -391,6 +420,21 @@ if(WIN32)
     endif()
 endif()
 
+if(OSX_FRAMEWORK)
+    set_property(SOURCE ${LIBEXSLT_HDRS}
+        PROPERTY MACOSX_PACKAGE_LOCATION "Headers/libexslt"
+    )
+    set_target_properties(${EXSLT_LIB_NAME} PROPERTIES
+        FRAMEWORK TRUE
+        FRAMEWORK_VERSION "${LIBEXSLT_FRAMEWORK_VERSION}"
+        VERSION ${VERSION}
+        MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${VERSION}
+        MACOSX_FRAMEWORK_BUNDLE_VERSION ${VERSION}
+        MACOSX_FRAMEWORK_IDENTIFIER org.xmlsoft.libxslt
+        XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
+    )
+endif()
+
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 # Export package ===============================================================
@@ -411,15 +455,14 @@ configure_file(cmake/PackageConfig.cmake.in
 
 if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
 
-    install(FILES ${LIBXSLT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libxslt COMPONENT development)
-    install(FILES ${LIBEXSLT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libexslt COMPONENT development)
-
     install(
         TARGETS ${XSLT_LIB_NAME} ${EXSLT_LIB_NAME}
         EXPORT ${PACKAGE_UPPER_NAME}Targets
         ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT development
         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT runtime NAMELINK_SKIP
         RUNTIME DESTINATION ${INSTALL_BIN_DIR} COMPONENT runtime
+        INCLUDES DESTINATION ${INSTALL_INC_DIR}
+        FRAMEWORK DESTINATION ${INSTALL_LIB_DIR}
     )
     
     # Install the <Package>Config.cmake
@@ -434,6 +477,11 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
         install(FILES $<TARGET_PDB_FILE:${XSLT_LIB_NAME}> DESTINATION ${INSTALL_BIN_DIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT debug)
         install(FILES $<TARGET_PDB_FILE:${EXSLT_LIB_NAME}> DESTINATION ${CMAKE_INSTALL_BINDIR} CONFIGURATIONS Debug RelWithDebInfo COMPONENT debug)
     endif()
+endif()
+
+if(NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
+   install(FILES ${LIBXSLT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libxslt COMPONENT development)
+   install(FILES ${LIBEXSLT_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libexslt COMPONENT development)
 endif()
 
 # Archiving ====================================================================
